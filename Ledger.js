@@ -9,6 +9,8 @@
  * @param {string} sheetName Optional parameter for the sheet name this defaults to "Ledger"
  */
 const addTransaction =  (transaction, sheetName = 'Ledger') => {
+
+  // Returns the last occurance date of a transaction given a description
   const lastOccurance = (description, sheetName) => {
     let lastDate;
 
@@ -25,21 +27,25 @@ const addTransaction =  (transaction, sheetName = 'Ledger') => {
         i++;
       });
     } else {
-      Logger.log('Sheet "%s" not found.', sheetName)
+      Logger.log('Sheet "%s" not found.', sheetName);
     }
 
     return lastDate; 
-  }
+  };
 
+
+  // Returns the time since the last occurance date of a transaction
   const sinceLast = (transaction, sheetName) => {
+    // Returns days since last occurance of the description
     const daysSince = (description, sheetName) => {
-      return Math.ceil(Math.abs((new Date) - (new Date(lastOccurance(description, sheetName)))) / (1000 * 60 * 60 * 24));
-    }
+      return Math.ceil(Math.abs((new Date()) - (new Date(lastOccurance(description, sheetName)))) / (1000 * 60 * 60 * 24));
+    };
 
+    // Returns months since last occurance of the description
     const monthsSince = (description, sheetName) => {
       var dateLastOccurance = new Date(lastOccurance(description, sheetName));
-      var dateToday = new Date;
-      //var dateToday = new Date('2021-04-26');
+      var dateToday = new Date();
+
       var months;
       months = (dateToday.getFullYear() - dateLastOccurance.getFullYear()) * 12;
       months -= dateLastOccurance.getMonth();
@@ -52,23 +58,23 @@ const addTransaction =  (transaction, sheetName = 'Ledger') => {
       }
 
       return months <= 0 ? 0 : months;
-    }
+    };
 
     if (transaction.frequency && transaction.frequency.unit) {
       switch(transaction.frequency.unit) {
         case "day": {
             return daysSince(transaction.description, sheetName);
-            break;
         }
         case "month": {
             return monthsSince(transaction.description, sheetName);
-            break;
         }
       }
     }
-  }
+  };
 
+  // Adds a row based on the supplied transaction
   const addRow = (transaction, sheetName) => {
+    // Firgure out the next transaction date
     const nextTransactionDate = (transaction, sheetName) => {
       let date = new Date();
 
@@ -90,7 +96,7 @@ const addTransaction =  (transaction, sheetName = 'Ledger') => {
         }
       }
       return date;
-    }
+    };
 
     let debit = '';
     if (transaction.debit) {
@@ -102,7 +108,6 @@ const addTransaction =  (transaction, sheetName = 'Ledger') => {
     }
 
     let date = nextTransactionDate(transaction, sheetName);
-
     if (date) {
       let sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sheetName);
       if (sheet != null){
@@ -113,19 +118,19 @@ const addTransaction =  (transaction, sheetName = 'Ledger') => {
         let cell = sheet.getRange(lastRow, 5);
 
         //cell.setFormula('=IF(ISNUMBER(E' + previousRow + '),E' + previousRow + ',0)+C' + lastRow + '-D' + lastRow);
-        cell.setFormula('=SUM(OFFSET($A$1,1,2,ROW()-1,1))-SUM(OFFSET($A$1,1,3,ROW()-1,1))')
+        cell.setFormula('=SUM(OFFSET($A$1,1,2,ROW()-1,1))-SUM(OFFSET($A$1,1,3,ROW()-1,1))');
       } else {
-        Logger.log('Sheet "%s" not found.', sheetName)
+        Logger.log('Sheet "%s" not found.', sheetName);
       }
     }
-  }
+  };
 
   let since = sinceLast(transaction, sheetName);
   while(since >= transaction.frequency.threshold) {
     addRow(transaction, sheetName);
-    since = sinceLast(transaction, sheetName);;
+    since = sinceLast(transaction, sheetName);
   }
-}
+};
 
 const trasaction_schema = {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -172,4 +177,4 @@ const trasaction_schema = {
         "required": [ "credit" ]
     },
   ]
-}
+};
